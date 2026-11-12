@@ -9,8 +9,8 @@ cómo funciona un sistema de trading de principio a fin (datos, señales, riesgo
 
 *English summary: an educational, news-driven trading bot (crypto on Bitvavo and EU/US stocks on Trading 212)
 with LLM news scoring, technical signals, risk limits, broker-side stop-losses and human confirmation of
-every order through Telegram. It ran with real (very small) money for ten days; the honest result is in
-"Resultados reales" below: no measurable edge after costs.*
+every order through Telegram. Every signal was logged and evaluated statistically over 180 days of market
+data plus a live phase; the result is in "Qué dicen los datos" below: no measurable edge after costs.*
 
 ## Qué hace
 
@@ -65,26 +65,51 @@ precios (Yahoo, ccxt) ─► features/  (medias, ATR, intradía, sesiones de mer
 - Avisa de los **días de pánico**, pero nunca compra por ellos: solo los guarda para medir qué pasó después.
 - Nunca guarda ni registra claves; las claves de API deben tener permiso de operar, **nunca de retirar**.
 
-## Resultados reales (lo más importante)
+## Qué dicen los datos (lo más importante)
 
-Funcionó con dinero real del 3 al 12 de noviembre de 2026, con unos 50 € en Trading 212:
+El bot guarda cada señal que calcula y, horas después, comprueba qué pasó con el precio. Con eso se mide
+si cada componente predice algo. Base de la medición: **180 días** de datos horarios de **16 acciones** de
+EE. UU. (mayo–noviembre de 2026), más una fase en vivo con noticias.
 
-| Operación | Resultado |
-|---|---|
-| WMT (Xetra), stop del broker por un hueco de liquidez | −0,54 € |
-| WMT (Xetra), venta al cerrar la cartera europea | −0,25 € |
-| PLTR (EE. UU.), objetivo de beneficio | +0,06 € |
-| XOM (EE. UU.), stop-loss | ≈ −0,48 € |
-| **Total** | **≈ −1,2 €** (1 de 4 operaciones ganadoras) |
+**Poder predictivo de cada componente**: coeficiente de información (IC, correlación de rangos entre la señal y
+la rentabilidad posterior), con intervalo de confianza del 95 %. Horizonte de 4 h, ≈ 620 muestras independientes.
 
-Diez días son muy poca muestra. Pero las mediciones de 180 días de histórico dicen lo mismo:
+| Componente | IC | IC 95 % | Acierto de dirección | ¿Significativo? |
+|---|---|---|---|---|
+| Bollinger (vuelta a la media) | +0,08 | [+0,00, +0,17] | 52 % | **Sí, débil** |
+| RSI (sobreventa) | +0,07 | [−0,02, +0,15] | 53 % | Casi |
+| Tendencia (medias 10/30 días) | 0,00 | [−0,08, +0,08] | 49 % | No |
+| Impulso intradía | −0,07 | [−0,21, +0,07] | 48 % | No |
+| Momentum ("lo que sube, sigue") | −0,10 | [−0,18, −0,01] | 45 % | **Sí, al revés** |
+| Noticias (modelo de lenguaje) | −0,16 | [−0,76, +0,59] | 41 % | No (muestra corta) |
+| **Señal combinada** | −0,05 | — | — | No |
 
-- **Ningún componente de la señal gana con claridad a los costes.** Lo único con poder predictivo
-  significativo fue Bollinger (volver a la media), y en su mejor 10 % daba +0,3 % a 24 h: lo mismo que cuesta
-  operar (~0,4 % ida y vuelta en EE. UU. con cuenta en euros).
-- **Las noticias no demostraron ventaja.** La parte con más peso (35 %) no tenía pruebas a favor.
-- **El impulso ("lo que sube sigue subiendo") iba al revés** a 4 horas vista.
-- **Comprar en los días de pánico** solo dio señales prometedoras en 5 casos, demasiado pocos para fiarse.
+**¿Supera los costes?** Operar acciones de EE. UU. con una cuenta en euros cuesta ≈ **0,4 % por operación
+completa** (cambio de divisa y spread).
+
+| Estrategia probada | Rentabilidad media siguiente | Frente al coste |
+|---|---|---|
+| Comprar el 10 % de momentos con mejor señal de Bollinger | +0,28 % a 24 h | Por debajo |
+| Comprar el 10 % de momentos con mejor señal de RSI | +0,47 % a 24 h | Prácticamente igual |
+| Comprar tras una caída ≥ 4 % en un día (154 casos) | +0,4 % a 3 días; sube el 54 % de las veces | Igual |
+| Comprar cualquier día (referencia) | −0,03 % a 24 h | — |
+
+**Días de pánico.** Días en los que el 60 % o más de los valores cae ≥ 2 % y la mediana cae ≥ 2,5 %:
+
+| | Casos | Día siguiente (media) | Supera el coste |
+|---|---|---|---|
+| Los 3 valores que más cayeron, en un día de pánico | 5 | **+3,5 %** | 4 de 5 |
+| Todos los valores, en un día de pánico | 5 | +0,6 % | 3 de 5 |
+| Los 3 que más cayeron, en un día normal | 119 | −0,1 % | 35 % |
+
+Es el único patrón con un efecto grande, pero **con 5 casos no es estadísticamente fiable**: la media sale
+sobre todo de dos días muy buenos. El bot lo sigue midiendo sin operar por ello.
+
+**Fase en vivo.** 4 operaciones cerradas y 1 ganadora (25 %). Es una muestra demasiado pequeña para concluir
+nada por sí sola, pero coincide con lo anterior.
+
+**Conclusión:** con estos datos, **ninguna señal supera de forma fiable el coste de operar**. Lo que mejor
+funciona es la vuelta a la media (Bollinger, RSI), y aun así su ventaja es del mismo tamaño que los costes.
 
 ## Lecciones aprendidas
 
@@ -95,7 +120,8 @@ Diez días son muy poca muestra. Pero las mediciones de 180 días de histórico 
 3. **Medir antes de creer.** El bot guarda cada señal y comprueba después si acertó; eso evita cambiar las
    reglas por un día bueno o malo.
 4. **Un titular no es una ventaja.** Lo que sale en las noticias ya lo sabe todo el mercado y ya está en el precio.
-5. **Con poco capital, lo que más hace crecer la cuenta es lo que ahorras, no lo que rinde.**
+5. **Desconfiar de los efectos grandes con pocos casos.** El patrón más llamativo (días de pánico) es justo el
+   que tiene menos datos detrás.
 
 ## Uso (modo papel)
 
