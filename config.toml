@@ -1,0 +1,133 @@
+# Configuración de newsbot. Los parámetros que apruebe la reoptimización mensual (params_history)
+# se aplican encima de este fichero; el hash de este fichero se guarda con cada decisión.
+
+[general]
+enabled = false          # cripto (Bitvavo) apagada: el proceso sigue para la bolsa (Trading 212) y
+                          # Telegram; los comandos sin palabra van a la bolsa. true para volver a operar
+mode = "paper"           # "live" exige además CONFIRM_LIVE=yes y claves en el entorno
+exchange = "bitvavo"      # id de ccxt (bitvavo, kraken, ...)
+# Universo: cada día se analizan todas y se mantiene como mucho UNA posición. Sin memecoins.
+# Cada moneda necesita sus palabras clave en [news.assets].
+symbols = ["BTC/EUR", "ETH/EUR", "SOL/EUR", "XRP/EUR", "ADA/EUR"]
+initial_capital = 10.0
+timezone = "Europe/Madrid"
+data_dir = "data"
+healthcheck_hours = 26    # aviso por Telegram si no hay decisión en este tiempo
+tick_minutes = 5          # frecuencia del bucle continuo (python -m newsbot.bot --loop)
+# Otras carteras en el mismo proceso y el mismo chat de Telegram ("/estado bolsa"...)
+portfolios = ["config_usa_paper.toml"]  # carteras de bolsa (añade config_bolsa.toml si quieres)
+
+[weights]                 # deben sumar 1
+news = 0.40
+trend = 0.30              # tendencia diaria (SMA10 vs SMA30)
+intraday = 0.15           # impulso de las últimas horas (EMA rápida vs lenta en velas de 15 min)
+fng = 0.10                # Fear & Greed, contrario en los extremos
+votes = 0.05              # votos de CryptoPanic (0 si no hay CRYPTOPANIC_TOKEN)
+# Componentes "sombra" (ideas de freqtrade y de la literatura): se calculan y se miden en cada
+# tick, pero solo operan si tienen peso aquí o en una propuesta aprobada (/aprobar). Sin peso = 0.
+# rsi, bollinger (contrarios), momentum (retorno de 7 días), volume (volumen con el signo del día)
+
+[strategy]
+buy_threshold = 0.25
+buy_threshold_bear = 0.40 # umbral de compra si el precio está por debajo de la SMA200
+sell_threshold = -0.15
+news_ema_days = 3         # EMA sobre el sentimiento: un titular suelto no cambia la decisión
+sma_fast = 10
+sma_slow = 30
+sma_regime = 200
+intraday_timeframe = "15m"
+ema_fast = 8              # 8 velas de 15 min = 2 h
+ema_slow = 32             # 32 velas de 15 min = 8 h
+
+[risk]
+max_exposure = 1.0
+min_rebalance_pct = 0.20
+stop_loss_pct = 0.08
+trailing_stop_pct = 0.0   # 0 = desactivado
+max_drawdown_pct = 0.25   # kill-switch: solo vender/mantener hasta reactivarlo a mano
+vol_target = 0.0          # volatilidad anual objetivo; 0 = desactivado
+edge_cost_multiple = 2.0  # movimiento esperado >= 2 × coste de ida y vuelta
+atr_days = 14
+min_order_eur = 5.0       # solo si el exchange no devuelve limits.cost.min
+max_trades_per_day = 3    # operaciones como máximo al día (después solo actúan los stops)
+cooldown_minutes = 120    # tras operar, no vuelve a operar por señal en este tiempo (los stops sí)
+
+[costs]                   # el broker live avisa si las comisiones reales de tu cuenta son mayores
+fee_pct = 0.0025
+slippage_pct = 0.001
+
+[execution]
+order_type = "limit_then_market"  # o "market". Si la comisión maker de tu cuenta no es menor que
+                                  # la taker, el bot usa "market" automáticamente.
+limit_timeout_min = 15
+operator_id = 1001        # Bitvavo exige un operatorId entero en cada orden: identifica a este bot
+
+[sentiment]
+cascade = ["llm", "finbert", "lexicon"]
+llm_model = "claude-haiku-5-5"
+finbert_model = "ProsusAI/finbert"
+debate = false            # alcista vs bajista + veredicto: triplica el coste del LLM
+anonymize = true
+llm_min_minutes = 120     # Claude reutiliza el resultado de cada moneda durante este tiempo
+llm_max_calls_day = 60    # tope diario de llamadas (≈ 1 $/mes con Haiku); después, léxico
+
+[news]
+window_hours = 24
+half_life_hours = 12      # un titular de hace 12 h pesa la mitad que uno de ahora
+cryptopanic_plan = "growth"   # growth | growth_weekly | enterprise (requiere CRYPTOPANIC_TOKEN)
+
+[news.assets]             # titulares que cuentan para el sentimiento de cada moneda
+# Las noticias generales y regulatorias (crypto, sec, fed...) se atribuyen a BTC, que mueve el mercado.
+BTC = ["bitcoin", "btc", "crypto", "cryptocurrency", "etf", "sec", "fed", "halving", "mining"]
+ETH = ["ethereum", "ether", "eth"]
+SOL = ["solana", "sol"]
+XRP = ["xrp", "ripple"]
+ADA = ["cardano", "ada"]
+
+[news.feeds]
+coindesk = "https://www.coindesk.com/arc/outboundfeeds/rss/"
+cointelegraph = "https://cointelegraph.com/rss"
+decrypt = "https://decrypt.co/feed"
+bitcoinmagazine = "https://bitcoinmagazine.com/.rss/full/"
+# Foros: opinión, no noticias. Reddit limita las consultas (429): si falla, se ignora esa ronda.
+reddit_cryptocurrency = "https://www.reddit.com/r/CryptoCurrency/.rss"
+reddit_bitcoin = "https://www.reddit.com/r/Bitcoin/.rss"
+
+[news.source_weights]     # fiabilidad relativa de cada fuente
+coindesk = 1.0
+cointelegraph = 0.8
+decrypt = 0.8
+bitcoinmagazine = 0.7     # sesgo alcista editorial
+cryptopanic = 0.6         # agregador: mezcla calidad
+reddit_cryptocurrency = 0.3   # foros: mucho ruido, poco peso
+reddit_bitcoin = 0.3
+default = 0.5
+
+[watch]                   # vigilante de noticias: python -m newsbot.bot --watch (cada 15 min)
+enabled = true            # false: solo guarda titulares y nunca adelanta decisiones
+window_hours = 3          # titulares recientes que cuentan para detectar una noticia fuerte
+min_sources = 3           # fuentes distintas hablando de la misma moneda
+min_strength = 0.5        # |sentimiento × confianza| mínimo (el léxico llega como mucho a 0,7)
+
+[adapt]
+enabled = true
+cadence_days = 14         # umbrales de compra y venta: walk-forward cada 2 semanas
+auto_apply_in_paper = true
+auto_apply_live = true    # aplica solo también en live (±0.05 por cambio, límites duros, /deshacer)
+max_weight_step = 0.15    # ningún parámetro cambia más que esto en una propuesta
+lookback_days = 730
+train_days = 180
+test_days = 60
+mc_runs = 100
+
+[learn]                   # retroalimentación: cada tick se guarda y luego se compara con el precio real
+enabled = true
+horizon = "4h"            # horizonte principal (1h, 4h, 24h); a 5 min solo hay ruido y comisiones
+lookback_days = 60
+min_n_eff = 400           # muestras efectivas (no solapadas) antes de proponer cambiar pesos
+max_step = 0.05           # ningún peso cambia más que esto por propuesta
+shrinkage_k = 400         # cuanto menos dato, más cerca de los pesos actuales
+cadence_days = 7          # como mucho un cambio de pesos por semana
+auto_apply_live = true    # en live se aplica solo y avisa por Telegram (/deshacer para revertirlo)
+cost = 0.006              # coste de ida y vuelta: el retorno medio tras una señal debe superarlo
+min_abs = 0.05            # |componente| mínimo para contar un acierto de dirección

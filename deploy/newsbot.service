@@ -1,0 +1,11 @@
+# Alternativa a cron. Copia ambos ficheros a /etc/systemd/system/ y:
+#   systemctl daemon-reload && systemctl enable --now newsbot.timer
+[Unit]
+Description=newsbot: decisión diaria
+After=network-online.target docker.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/newsbot
+ExecStart=/usr/bin/docker compose run --rm newsbot python -m newsbot.bot

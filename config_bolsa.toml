@@ -1,0 +1,544 @@
+# Cartera de BOLSA en Trading 212 (cuenta real en EUR). Analiza sola cada 15 min en horario de mercado, pero
+# CADA compra o venta te la propone por Telegram y solo se ejecuta si pulsas ✅ (o respondes "sí"): las
+# condiciones de la API de Trading 212 prohíben el trading algorítmico sin intervención humana.
+# Varias posiciones a la vez con límites de tamaño, sector y caja; stop-loss puesto en el propio broker.
+# La activa config.toml con general.portfolios = ["config_bolsa.toml"]; en Telegram se elige con la
+# palabra "bolsa" (/estado bolsa, /eventos...). Datos con 15-20 min de retraso (ICE vía Yahoo).
+
+[general]
+portfolio = "bolsa"       # palabra de la cartera en Telegram (no puede coincidir con un activo)
+label = "📈 Bolsa"         # etiqueta de sus avisos
+mode = "paper"            # "live" exige CONFIRM_LIVE=yes y TRADING212_API_KEY/SECRET; "paper" simula
+engine = "stocks"         # motor multiposición con propuestas (newsbot/stocks)
+exchange = "yahoo"        # fuente de datos (features/yahoo.py); cada activo necesita [market.CODE]
+# Universo en EUR (Xetra, Milán, París, Madrid, Ámsterdam): defensa, oro, chips, grandes tecnológicas de
+# EE. UU. en su línea de Xetra (sin comisión de cambio), Take-Two (GTA), Walmart y el S&P 500.
+# El primero es el de referencia para la reoptimización. Cada código necesita [news.assets] y [market].
+symbols = ["DFNS/EUR", "GOLD/EUR", "RHM/EUR", "LDO/EUR", "HO/EUR", "IDR/EUR", "ASML/EUR", "IFX/EUR",
+           "SEMI/EUR", "NVDA/EUR", "AMD/EUR", "AAPL/EUR", "MSFT/EUR", "TTWO/EUR", "WMT/EUR",
+           "SP500/EUR"]
+initial_capital = 20.0     # referencia del P&L = su presupuesto (budget_eur); el resto es de EE. UU.
+timezone = "Europe/Madrid"
+data_dir = "data/bolsa"
+healthcheck_hours = 80    # cubre el fin de semana (viernes 17:30 -> lunes 09:20)
+tick_minutes = 15         # las velas cortas de Yahoo son de 15 min
+# wind_down = true         # cierre de la cartera: no compra y propone vender lo que queda
+# wind_down_after = "15:45" # ... solo desde esta hora local
+
+[weights]                 # deben sumar 1
+news = 0.40
+trend = 0.30              # tendencia diaria (SMA10 vs SMA30)
+intraday = 0.15           # impulso de las últimas horas (EMA rápida vs lenta en velas de 15 min)
+events = 0.15             # eventos con fecha (presentaciones, lanzamientos, GTA VI...): sube antes, baja después
+fng = 0.0                 # Fear & Greed es de cripto: no se usa (news.fng = false)
+votes = 0.0               # votos de CryptoPanic: no hay para acciones
+# Componentes "sombra": rsi, bollinger, momentum, volume, breakout (canal de 20 días), macd y high52
+# (cercanía al máximo de 52 semanas) se calculan y se miden en cada tick, pero solo
+# operan si tienen peso aquí o en una propuesta aprobada (/aprobar bolsa N). Sin peso = 0.
+
+[strategy]
+buy_threshold = 0.25
+buy_threshold_bear = 0.40 # umbral de compra si el precio está por debajo de la SMA200
+sell_threshold = -0.15
+news_ema_days = 3         # EMA sobre el sentimiento: un titular suelto no cambia la decisión
+sma_fast = 10
+sma_slow = 30
+sma_regime = 200
+intraday_timeframe = "15m"
+ema_fast = 8              # 8 velas de 15 min = 2 h
+ema_slow = 32             # 32 velas de 15 min = 8 h (≈ una sesión)
+
+[risk]
+max_exposure = 1.0
+min_rebalance_pct = 0.20
+stop_loss_pct = 0.08
+trailing_stop_pct = 0.0   # 0 = desactivado
+take_profit_pct = 0.03    # propone vender al +3 % sobre la entrada (recoger beneficio)
+max_drawdown_pct = 0.25   # kill-switch: solo vender/mantener hasta reactivarlo a mano
+vol_target = 0.0          # volatilidad anual objetivo; 0 = desactivado
+edge_cost_multiple = 2.0  # movimiento esperado >= 2 × coste de ida y vuelta
+atr_days = 14
+min_order_eur = 1.0       # fracciones de acción (ASML y RHM cuestan > 1000 €)
+max_trades_per_day = 3    # operaciones como máximo al día (después solo actúan los stops)
+cooldown_minutes = 120    # tras vender un valor, no lo vuelve a comprar en este tiempo
+
+[costs]                   # estilo Trading 212: 0 € de comisión; el spread va en el deslizamiento
+fee_pct = 0.0
+slippage_pct = 0.001      # no modela la tasa Tobin de HO (FR 0,4 %), IDR (ES 0,2 %) ni LDO (IT 0,1 %)
+
+[execution]
+order_type = "market"
+limit_timeout_min = 15
+operator_id = 0           # solo Bitvavo lo usa
+broker = "trading212"     # quién ejecuta (la fuente de datos es general.exchange)
+t212_env = "live"         # cuenta real (la clave de demo es otra)
+confirm = true            # obligatorio con Trading 212: cada orden espera tu ✅ en Telegram
+proposal_minutes = 10     # una propuesta caduca a los 10 min (el precio ya habrá cambiado)
+max_proposals_day = 8     # como mucho 8 propuestas al día
+reject_cooldown_hours = 4 # si dices que no, no vuelve a proponer ese valor en 4 h (salvo stop-loss)
+max_order_eur = 25.0      # tope absoluto por orden
+price_drift_max = 0.015   # si al confirmar el precio se ha movido > 1,5 %, no ejecuta y avisa
+broker_stop = true        # tras comprar, deja el stop-loss puesto en Trading 212 (funciona con el PC apagado)
+
+[portfolio]               # equilibrio: nunca todo en una apuesta
+budget_eur = 20.0         # presupuesto de esta cartera en la cuenta compartida de Trading 212 (EE. UU.: 30 €);
+                          # crece con lo que gane: las ganancias se reinvierten aquí
+max_positions = 3         # como mucho 3 valores a la vez
+max_position_pct = 0.35   # cada posición, como mucho el 35 % del capital
+max_group_pct = 0.50      # cada sector (defensa, chips...), como mucho el 50 %
+max_group_positions = 2   # y como mucho 2 valores del mismo sector
+min_cash_pct = 0.20       # siempre queda al menos un 20 % en efectivo
+risk_per_trade_pct = 0.02 # si salta el stop, se pierde como mucho un 2 % del capital: los valores más
+atr_stop_mult = 2.5       # volátiles llevan posiciones más pequeñas (stop a 2,5 × ATR, entre 3 % y 12 %)
+
+[local_news]              # FinBERT puntúa cada titular en tu ordenador (sin gastar Claude): componente
+enabled = true            # sombra "finbert" y, si llega un titular nuevo y muy marcado, adelanta Claude
+breaking = 0.80           # tono mínimo (de 1) para considerarlo noticia fuerte
+min_weight = 0.5          # y peso mínimo (fuente fiable y reciente)
+
+[adaptive]                # umbral de compra que se ajusta solo: más exigente si pierde, más atrevido si gana
+enabled = true
+min_trades = 4            # empieza a ajustar con 4 operaciones cerradas
+window = 6                # mira las últimas 6 operaciones cerradas
+step = 0.03               # cada ajuste mueve el umbral 0,03
+min_offset = -0.08        # entre 0,17 y 0,40 (0,25 − 0,08 / + 0,15)
+max_offset = 0.15
+
+[events]                  # Claude lee las noticias y apunta los eventos con fecha de cada empresa
+enabled = true
+refresh_hours = 4         # cada cuánto busca eventos nuevos en los titulares
+lookahead_days = 30       # eventos de los próximos 30 días
+pre_days = 7              # el efecto crece en los 7 días previos (compra el rumor)...
+post_days = 3             # ...y se da la vuelta 3 días después (vende la noticia)
+llm_max_calls_day = 8     # tope de llamadas a Claude para eventos
+
+[sentiment]
+cascade = ["llm"]         # léxico y FinBERT miden el tono, no el efecto: una guerra es "negativa" pero
+fallback = "none"         # sube el oro y la defensa. Sin LLM la noticia cuenta 0 (no el léxico)
+llm_model = "claude-haiku-5-5"
+finbert_model = "ProsusAI/finbert"
+debate = false
+anonymize = false         # las noticias de competidores (contratos, pedidos) sí informan
+llm_min_minutes = 180     # Claude reutiliza el resultado de cada valor durante este tiempo
+llm_max_calls_day = 60    # tope diario propio de esta cartera
+
+[session]                 # horario de mercado (hora de Madrid, lunes = 0). Festivos: los dice Yahoo
+tz = "Europe/Madrid"
+days = [0, 1, 2, 3, 4]
+open = "09:20"            # 20 min tras la apertura: sin la subasta y con datos con retraso ya del día
+close = "17:30"
+
+[market.DFNS]
+ticker = "DFEN.DE"
+isin = "IE000YYE6WK5"
+t212 = "DFENd_EQ"
+group = "defensa"
+name = "European/global defense-sector UCITS ETF (Rheinmetall, Thales, Leonardo, BAE, Saab, Hensoldt…; driven by government defense budgets and NATO targets; hurt by credible ceasefires and budget cuts)"
+
+[market.GOLD]
+ticker = "4GLD.DE"
+isin = "DE000A0S9GB0"
+t212 = "4GLDd_EQ"
+group = "oro"
+name = "Gold (physical gold ETC in EUR; rises on geopolitical threats, falling real rates, weaker USD; falls on hawkish Fed/ECB, stronger USD, de-escalation; war outbreaks are often sell-the-news)"
+
+[market.RHM]
+ticker = "RHM.DE"
+isin = "DE0007030009"
+t212 = "RHMd_EQ"
+group = "defensa"
+name = "Rheinmetall (German defense manufacturer: ammunition, armored vehicles, air defense; main beneficiary of German/European rearmament and Ukraine support; sensitive to Bundeswehr orders, German budget decisions, Russia–Ukraine peace news)"
+
+[market.LDO]
+ticker = "LDO.MI"
+isin = "IT0003856405"
+t212 = "FMNBd_EQ"
+group = "defensa"
+name = "Leonardo S.p.A. (Italian aerospace & defense: helicopters, defense electronics, Eurofighter/GCAP partner, controls US-listed Leonardo DRS; benefits from Italian/European defense spending)"
+
+[market.HO]
+ticker = "HO.PA"
+isin = "FR0000121329"
+t212 = "HOp_EQ"
+group = "defensa"
+name = "Thales (French defense & aerospace electronics: radars, air defense, avionics, space, cybersecurity; benefits from French/European defense spending)"
+
+[market.IDR]
+ticker = "IDR.MC"
+isin = "ES0118594417"
+t212 = "IDRe_EQ"
+group = "defensa"
+name = "Indra Sistemas (Spanish defense & IT: radars, air-traffic management, Spain's main defense-program integrator, Minsait IT; benefits from Spain's defense-budget increases)"
+
+[market.ASML]
+ticker = "ASML.AS"
+isin = "NL0010273215"
+t212 = "ASMLa_EQ"
+group = "chips"
+name = "ASML (Dutch chip-lithography maker, sole EUV supplier; driven by chipmaker capex and AI demand; hurt by US/Dutch export controls on China and Taiwan tension)"
+
+[market.IFX]
+ticker = "IFX.DE"
+isin = "DE0006231004"
+t212 = "IFXd_EQ"
+group = "chips"
+name = "Infineon (German power semiconductors and microcontrollers, heavy auto/industrial exposure; sensitive to auto demand, China, tariffs, chip inventory cycle)"
+
+[market.SEMI]
+ticker = "SMH.MI"
+isin = "IE00BMC38736"
+t212 = "SMHm_EQ"
+group = "chips"
+name = "Global semiconductor UCITS ETF (Nvidia, TSMC, Broadcom, ASML…; driven by AI capex; hurt by export controls, Taiwan risk, tariffs, rising real yields)"
+
+[market.SP500]
+ticker = "SXR8.DE"
+isin = "IE00B5BMR087"
+t212 = "SXR8d_EQ"
+group = "mercado"
+name = "S&P 500 UCITS ETF in EUR (US large caps; up on earnings, falling rates, de-escalation; down on escalation, tariffs, hawkish Fed; EUR/USD also moves it)"
+
+[market.NVDA]
+ticker = "NVD.DE"
+isin = "US67066G1040"
+t212 = "NVDd_EQ"
+group = "chips"
+name = "Nvidia (US AI-chip leader: data-center GPUs; EUR line on Xetra; moves on AI capex, product keynotes such as GTC/CES/Computex, export controls to China and earnings; keynotes often lift the stock in the days before)"
+
+[market.AMD]
+ticker = "AMD.DE"
+isin = "US0079031078"
+t212 = "AMDd_EQ"
+group = "chips"
+name = "AMD (US CPU/GPU maker with data-center AI accelerators; EUR line on Xetra; driven by AI demand, product launches, export controls and earnings)"
+
+[market.AAPL]
+ticker = "APC.DE"
+isin = "US0378331005"
+t212 = "APCd_EQ"
+group = "tecnologia"
+name = "Apple (iPhone, Mac, services; EUR line on Xetra; moves on product events such as the September iPhone launch and WWDC, China demand, tariffs and earnings; its events are often 'buy the rumor, sell the news')"
+
+[market.MSFT]
+ticker = "MSF.DE"
+isin = "US5949181045"
+t212 = "MSFd_EQ"
+group = "tecnologia"
+name = "Microsoft (Azure cloud, AI partner of OpenAI, Office, Xbox/Activision; EUR line on Xetra; driven by AI/cloud growth, earnings and regulation)"
+
+[market.TTWO]
+ticker = "TKE.DE"
+isin = "US8740541094"
+t212 = "TKEd_EQ"
+group = "consumo"
+name = "Take-Two Interactive (video-game publisher: Rockstar/GTA, NBA 2K; EUR line on Xetra; GTA VI release timing and any delay are the dominant driver)"
+
+[market.WMT]
+ticker = "WMT.DE"
+isin = "US9311421039"
+t212 = "WMTd_EQ"
+group = "consumo"
+name = "Walmart (largest US retailer; EUR line on Xetra; driven by US consumer spending, the holiday season and tariffs; big consumer launches such as consoles or GTA VI help it only marginally)"
+
+[news]
+window_hours = 66         # cubre el fin de semana: el lunes aún cuentan las noticias del viernes
+half_life_hours = 12      # un titular de hace 12 h pesa la mitad que uno de ahora
+fng = false               # sin Fear & Greed (es un índice de cripto)
+# Frases que dan falsos positivos con las palabras clave ("gold medal", "blue chip", "price war"...)
+exclude = ["gold medal", "blue chip", "blue-chip", "dicaprio", "da vinci", "del vecchio", "indra nooyi",
+          "price war", "culture war"]
+
+[news.assets]             # titulares que cuentan para cada valor: su nombre y entorno + los temas que
+# lo mueven (guerra/paz, presupuestos de defensa y líderes -> defensa y oro; chips/Taiwán y aranceles ->
+# chips y S&P 500; tipos -> oro, S&P 500 y chips; petróleo -> S&P 500). El LLM decide el signo.
+DFNS = ["defense stocks", "defence stocks", "defense sector", "defence sector", "defense industry",
+        "defence industry", "arms makers", "arms industry", "defense contractors",
+        "defence contractors", "bae systems", "saab", "safran", "kongsberg", "renk", "lockheed",
+        "northrop", "rtx", "general dynamics", "industria de defensa", "rheinmetall", "papperger",
+        "skyranger", "kf51", "bundeswehr", "sondervermögen", "zeitenwende", "schuldenbremse",
+        "debt brake", "german defence", "german defense", "155mm", "artillery shells", "ammunition",
+        "leonardo", "leonardo drs", "cingolani", "crosetto", "gcap", "eurofighter",
+        "italian defence", "italian defense", "thales", "patrice caine", "thales alenia",
+        "french defence", "french defense", "rafale", "indra", "indra sistemas", "minsait",
+        "escribano", "em&e", "fcas", "gasto en defensa", "presupuesto de defensa",
+        "ministerio de defensa", "spanish defence", "spanish defense", "hensoldt", "trml-4d",
+        "iris-t", "air defence", "air defense", "war", "invasion", "invade", "missile", "missiles",
+        "airstrike", "airstrikes", "drone attack", "drone strike", "shelling", "bombing", "troops",
+        "mobilization", "escalation", "nuclear", "blockade", "hormuz", "houthi", "houthis", "guerra",
+        "invasión", "misil", "misiles", "bombardeo", "escalada", "ormuz", "ceasefire", "cease-fire",
+        "truce", "peace talks", "peace deal", "peace plan", "armistice", "de-escalation",
+        "alto el fuego", "tregua", "negociaciones de paz", "acuerdo de paz", "nato", "otan",
+        "defense spending", "defence spending", "defense budget", "defence budget",
+        "military spending", "rearmament", "rearm europe", "readiness 2030", "european defence fund",
+        "security action for europe", "2% of gdp", "3.5% of gdp", "5% of gdp", "arms deal",
+        "arms sale", "arms sales", "us troops", "troop withdrawal", "gasto militar", "rearme",
+        "trump", "putin", "xi jinping", "zelensky", "zelenskyy", "netanyahu", "khamenei", "erdogan",
+        "merz", "macron", "von der leyen", "rutte", "white house", "kremlin", "truth social",
+        "executive order", "casa blanca"]
+GOLD = ["gold price", "gold prices", "spot gold", "gold futures", "bullion", "xau", "xauusd", "xau/usd",
+        "precious metals", "gold etf", "gold reserves", "central bank gold", "world gold council",
+        "safe haven", "safe-haven", "precio del oro", "onza de oro", "metales preciosos", "war",
+        "invasion", "invade", "missile", "missiles", "airstrike", "airstrikes", "drone attack",
+        "drone strike", "shelling", "bombing", "troops", "mobilization", "escalation", "nuclear",
+        "blockade", "hormuz", "houthi", "houthis", "guerra", "invasión", "misil", "misiles",
+        "bombardeo", "escalada", "ormuz", "ceasefire", "cease-fire", "truce", "peace talks",
+        "peace deal", "peace plan", "armistice", "de-escalation", "alto el fuego", "tregua",
+        "negociaciones de paz", "acuerdo de paz", "nato", "otan", "defense spending",
+        "defence spending", "defense budget", "defence budget", "military spending", "rearmament",
+        "rearm europe", "readiness 2030", "european defence fund", "security action for europe",
+        "2% of gdp", "3.5% of gdp", "5% of gdp", "arms deal", "arms sale", "arms sales", "us troops",
+        "troop withdrawal", "gasto militar", "rearme", "trump", "putin", "xi jinping", "zelensky",
+        "zelenskyy", "netanyahu", "khamenei", "erdogan", "merz", "macron", "von der leyen", "rutte",
+        "white house", "kremlin", "truth social", "executive order", "casa blanca",
+        "federal reserve", "fomc", "fed chair", "rate cut", "rate cuts", "rate hike", "rate hikes",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "real yields",
+        "dollar index", "ecb", "european central bank", "lagarde", "warsh", "bce", "reserva federal",
+        "tipos de interés", "inflación"]
+RHM = ["rheinmetall", "papperger", "skyranger", "kf51", "bundeswehr", "sondervermögen", "zeitenwende",
+       "schuldenbremse", "debt brake", "german defence", "german defense", "155mm",
+       "artillery shells", "ammunition", "war", "invasion", "invade", "missile", "missiles",
+       "airstrike", "airstrikes", "drone attack", "drone strike", "shelling", "bombing", "troops",
+       "mobilization", "escalation", "nuclear", "blockade", "hormuz", "houthi", "houthis", "guerra",
+       "invasión", "misil", "misiles", "bombardeo", "escalada", "ormuz", "ceasefire", "cease-fire",
+       "truce", "peace talks", "peace deal", "peace plan", "armistice", "de-escalation",
+       "alto el fuego", "tregua", "negociaciones de paz", "acuerdo de paz", "nato", "otan",
+       "defense spending", "defence spending", "defense budget", "defence budget",
+       "military spending", "rearmament", "rearm europe", "readiness 2030", "european defence fund",
+       "security action for europe", "2% of gdp", "3.5% of gdp", "5% of gdp", "arms deal",
+       "arms sale", "arms sales", "us troops", "troop withdrawal", "gasto militar", "rearme", "trump",
+       "putin", "xi jinping", "zelensky", "zelenskyy", "netanyahu", "khamenei", "erdogan", "merz",
+       "macron", "von der leyen", "rutte", "white house", "kremlin", "truth social",
+       "executive order", "casa blanca"]
+LDO = ["leonardo", "leonardo drs", "cingolani", "crosetto", "gcap", "eurofighter", "italian defence",
+       "italian defense", "war", "invasion", "invade", "missile", "missiles", "airstrike",
+       "airstrikes", "drone attack", "drone strike", "shelling", "bombing", "troops", "mobilization",
+       "escalation", "nuclear", "blockade", "hormuz", "houthi", "houthis", "guerra", "invasión",
+       "misil", "misiles", "bombardeo", "escalada", "ormuz", "ceasefire", "cease-fire", "truce",
+       "peace talks", "peace deal", "peace plan", "armistice", "de-escalation", "alto el fuego",
+       "tregua", "negociaciones de paz", "acuerdo de paz", "nato", "otan", "defense spending",
+       "defence spending", "defense budget", "defence budget", "military spending", "rearmament",
+       "rearm europe", "readiness 2030", "european defence fund", "security action for europe",
+       "2% of gdp", "3.5% of gdp", "5% of gdp", "arms deal", "arms sale", "arms sales", "us troops",
+       "troop withdrawal", "gasto militar", "rearme", "trump", "putin", "xi jinping", "zelensky",
+       "zelenskyy", "netanyahu", "khamenei", "erdogan", "merz", "macron", "von der leyen", "rutte",
+       "white house", "kremlin", "truth social", "executive order", "casa blanca"]
+HO = ["thales", "patrice caine", "thales alenia", "french defence", "french defense", "rafale", "war",
+      "invasion", "invade", "missile", "missiles", "airstrike", "airstrikes", "drone attack",
+      "drone strike", "shelling", "bombing", "troops", "mobilization", "escalation", "nuclear",
+      "blockade", "hormuz", "houthi", "houthis", "guerra", "invasión", "misil", "misiles", "bombardeo",
+      "escalada", "ormuz", "ceasefire", "cease-fire", "truce", "peace talks", "peace deal",
+      "peace plan", "armistice", "de-escalation", "alto el fuego", "tregua", "negociaciones de paz",
+      "acuerdo de paz", "nato", "otan", "defense spending", "defence spending", "defense budget",
+      "defence budget", "military spending", "rearmament", "rearm europe", "readiness 2030",
+      "european defence fund", "security action for europe", "2% of gdp", "3.5% of gdp", "5% of gdp",
+      "arms deal", "arms sale", "arms sales", "us troops", "troop withdrawal", "gasto militar",
+      "rearme", "trump", "putin", "xi jinping", "zelensky", "zelenskyy", "netanyahu", "khamenei",
+      "erdogan", "merz", "macron", "von der leyen", "rutte", "white house", "kremlin", "truth social",
+      "executive order", "casa blanca"]
+IDR = ["indra", "indra sistemas", "minsait", "escribano", "em&e", "fcas", "gasto en defensa",
+       "presupuesto de defensa", "ministerio de defensa", "spanish defence", "spanish defense", "war",
+       "invasion", "invade", "missile", "missiles", "airstrike", "airstrikes", "drone attack",
+       "drone strike", "shelling", "bombing", "troops", "mobilization", "escalation", "nuclear",
+       "blockade", "hormuz", "houthi", "houthis", "guerra", "invasión", "misil", "misiles",
+       "bombardeo", "escalada", "ormuz", "ceasefire", "cease-fire", "truce", "peace talks",
+       "peace deal", "peace plan", "armistice", "de-escalation", "alto el fuego", "tregua",
+       "negociaciones de paz", "acuerdo de paz", "nato", "otan", "defense spending",
+       "defence spending", "defense budget", "defence budget", "military spending", "rearmament",
+       "rearm europe", "readiness 2030", "european defence fund", "security action for europe",
+       "2% of gdp", "3.5% of gdp", "5% of gdp", "arms deal", "arms sale", "arms sales", "us troops",
+       "troop withdrawal", "gasto militar", "rearme", "trump", "putin", "xi jinping", "zelensky",
+       "zelenskyy", "netanyahu", "khamenei", "erdogan", "merz", "macron", "von der leyen", "rutte",
+       "white house", "kremlin", "truth social", "executive order", "casa blanca"]
+ASML = ["asml", "euv", "high-na", "lithography", "litografía", "fouquet", "veldhoven",
+        "chipmaking equipment", "semiconductor equipment", "wafer fab equipment",
+        "applied materials", "lam research", "tokyo electron", "tsmc", "export controls",
+        "export control", "export ban", "chip export", "chip exports", "chip ban", "entity list",
+        "taiwan strait", "taiwan", "chip shortage", "rare earths", "gallium", "germanium",
+        "controles a la exportación", "tierras raras", "escasez de chips", "tariff", "tariffs",
+        "trade war", "trade deal", "trade talks", "section 232", "section 301", "retaliatory",
+        "aranceles", "arancel", "guerra comercial", "acuerdo comercial"]
+IFX = ["infineon", "hanebeck", "power semiconductors", "silicon carbide", "gallium nitride",
+       "microcontrollers", "automotive chips", "auto chips", "nexperia", "stmicroelectronics", "nxp",
+       "export controls", "export control", "export ban", "chip export", "chip exports", "chip ban",
+       "entity list", "taiwan strait", "taiwan", "chip shortage", "rare earths", "gallium",
+       "germanium", "controles a la exportación", "tierras raras", "escasez de chips", "tariff",
+       "tariffs", "trade war", "trade deal", "trade talks", "section 232", "section 301",
+       "retaliatory", "aranceles", "arancel", "guerra comercial", "acuerdo comercial"]
+SEMI = ["semiconductor", "semiconductors", "chipmaker", "chipmakers", "nvidia", "tsmc", "broadcom", "amd",
+        "micron", "qualcomm", "sk hynix", "hbm", "ai chips", "chips act", "semiconductores",
+        "export controls", "export control", "export ban", "chip export", "chip exports", "chip ban",
+        "entity list", "taiwan strait", "taiwan", "chip shortage", "rare earths", "gallium",
+        "germanium", "controles a la exportación", "tierras raras", "escasez de chips", "tariff",
+        "tariffs", "trade war", "trade deal", "trade talks", "section 232", "section 301",
+        "retaliatory", "aranceles", "arancel", "guerra comercial", "acuerdo comercial",
+        "federal reserve", "fomc", "fed chair", "rate cut", "rate cuts", "rate hike", "rate hikes",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "real yields",
+        "dollar index", "ecb", "european central bank", "lagarde", "warsh", "bce", "reserva federal",
+        "tipos de interés", "inflación"]
+NVDA = ["nvidia", "jensen huang", "blackwell", "rubin", "gtc", "geforce", "cuda", "dgx", "h100", "h200",
+        "b200", "gb200", "export controls", "export control", "export ban", "chip export",
+        "chip exports", "chip ban", "entity list", "taiwan strait", "taiwan", "chip shortage",
+        "rare earths", "gallium", "germanium", "controles a la exportación", "tierras raras",
+        "escasez de chips", "tariff", "tariffs", "trade war", "trade deal", "trade talks",
+        "section 232", "section 301", "retaliatory", "aranceles", "arancel", "guerra comercial",
+        "acuerdo comercial", "federal reserve", "fomc", "fed chair", "rate cut", "rate cuts",
+        "rate hike", "rate hikes", "interest rates", "inflation", "cpi", "pce", "treasury yields",
+        "real yields", "dollar index", "ecb", "european central bank", "lagarde", "warsh", "bce",
+        "reserva federal", "tipos de interés", "inflación"]
+AMD = ["amd", "advanced micro devices", "lisa su", "ryzen", "radeon", "epyc", "mi300", "mi350", "mi400",
+       "export controls", "export control", "export ban", "chip export", "chip exports", "chip ban",
+       "entity list", "taiwan strait", "taiwan", "chip shortage", "rare earths", "gallium",
+       "germanium", "controles a la exportación", "tierras raras", "escasez de chips", "tariff",
+       "tariffs", "trade war", "trade deal", "trade talks", "section 232", "section 301",
+       "retaliatory", "aranceles", "arancel", "guerra comercial", "acuerdo comercial",
+       "federal reserve", "fomc", "fed chair", "rate cut", "rate cuts", "rate hike", "rate hikes",
+       "interest rates", "inflation", "cpi", "pce", "treasury yields", "real yields", "dollar index",
+       "ecb", "european central bank", "lagarde", "warsh", "bce", "reserva federal",
+       "tipos de interés", "inflación"]
+AAPL = ["apple", "iphone", "ipad", "macbook", "vision pro", "wwdc", "tim cook", "app store",
+        "apple intelligence", "cupertino", "export controls", "export control", "export ban",
+        "chip export", "chip exports", "chip ban", "entity list", "taiwan strait", "taiwan",
+        "chip shortage", "rare earths", "gallium", "germanium", "controles a la exportación",
+        "tierras raras", "escasez de chips", "tariff", "tariffs", "trade war", "trade deal",
+        "trade talks", "section 232", "section 301", "retaliatory", "aranceles", "arancel",
+        "guerra comercial", "acuerdo comercial", "federal reserve", "fomc", "fed chair", "rate cut",
+        "rate cuts", "rate hike", "rate hikes", "interest rates", "inflation", "cpi", "pce",
+        "treasury yields", "real yields", "dollar index", "ecb", "european central bank", "lagarde",
+        "warsh", "bce", "reserva federal", "tipos de interés", "inflación"]
+MSFT = ["microsoft", "azure", "copilot", "satya nadella", "xbox", "openai", "activision", "tariff",
+        "tariffs", "trade war", "trade deal", "trade talks", "section 232", "section 301",
+        "retaliatory", "aranceles", "arancel", "guerra comercial", "acuerdo comercial",
+        "federal reserve", "fomc", "fed chair", "rate cut", "rate cuts", "rate hike", "rate hikes",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "real yields",
+        "dollar index", "ecb", "european central bank", "lagarde", "warsh", "bce", "reserva federal",
+        "tipos de interés", "inflación"]
+TTWO = ["take-two", "take two", "rockstar", "rockstar games", "gta", "gta 6", "gta vi", "grand theft auto",
+        "2k games", "zynga", "strauss zelnick", "nba 2k", "borderlands", "federal reserve", "fomc",
+        "fed chair", "rate cut", "rate cuts", "rate hike", "rate hikes", "interest rates",
+        "inflation", "cpi", "pce", "treasury yields", "real yields", "dollar index", "ecb",
+        "european central bank", "lagarde", "warsh", "bce", "reserva federal", "tipos de interés",
+        "inflación"]
+WMT = ["walmart", "doug mcmillon", "sam's club", "black friday", "holiday sales", "retail sales",
+       "consumer spending", "gta 6", "gta vi", "tariff", "tariffs", "trade war", "trade deal",
+       "trade talks", "section 232", "section 301", "retaliatory", "aranceles", "arancel",
+       "guerra comercial", "acuerdo comercial", "federal reserve", "fomc", "fed chair", "rate cut",
+       "rate cuts", "rate hike", "rate hikes", "interest rates", "inflation", "cpi", "pce",
+       "treasury yields", "real yields", "dollar index", "ecb", "european central bank", "lagarde",
+       "warsh", "bce", "reserva federal", "tipos de interés", "inflación"]
+SP500 = ["s&p 500", "s&p500", "wall street", "us stocks", "u.s. stocks", "dow jones", "nasdaq",
+         "stock market", "earnings season", "recession", "jobs report", "nonfarm payrolls",
+         "midterms", "export controls", "export control", "export ban", "chip export",
+         "chip exports", "chip ban", "entity list", "taiwan strait", "taiwan", "chip shortage",
+         "rare earths", "gallium", "germanium", "controles a la exportación", "tierras raras",
+         "escasez de chips", "tariff", "tariffs", "trade war", "trade deal", "trade talks",
+         "section 232", "section 301", "retaliatory", "aranceles", "arancel", "guerra comercial",
+         "acuerdo comercial", "federal reserve", "fomc", "fed chair", "rate cut", "rate cuts",
+         "rate hike", "rate hikes", "interest rates", "inflation", "cpi", "pce", "treasury yields",
+         "real yields", "dollar index", "ecb", "european central bank", "lagarde", "warsh", "bce",
+         "reserva federal", "tipos de interés", "inflación", "oil prices", "crude", "brent", "wti",
+         "opec", "petróleo"]
+
+[news.feeds]              # Google News (gn_*): siempre con when:
+# Reuters vía Google News (sus feeds propios ya no existen)
+gn_reuters = "https://news.google.com/rss/search?q=site%3Areuters.com+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+wsj_markets = "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain"
+bbc_world = "https://feeds.bbci.co.uk/news/world/rss.xml"
+aljazeera = "https://www.aljazeera.com/xml/rss/all.xml"
+cnbc_world = "https://www.cnbc.com/id/100727362/device/rss/rss.html"
+gn_leaders = "https://news.google.com/rss/search?q=%28Trump+OR+Putin+OR+%22Xi+Jinping%22+OR+Zelensky%29+%28tariff+OR+tariffs+OR+sanctions+OR+ceasefire+OR+NATO+OR+missile+OR+troops+OR+chips%29+when%3A1d&hl=en-US&gl=US&ceid=US:en"
+gn_defense_names = "https://news.google.com/rss/search?q=Rheinmetall+OR+Hensoldt+OR+Thales+OR+%22Leonardo+SpA%22+OR+%22Indra+Sistemas%22+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+gn_defense_policy = "https://news.google.com/rss/search?q=%22defense+spending%22+OR+%22defence+spending%22+OR+%22defense+budget%22+OR+%22defence+budget%22+OR+rearmament+OR+%22NATO+summit%22+when%3A1d&hl=en-US&gl=US&ceid=US:en"
+gn_es_defensa = "https://news.google.com/rss/search?q=Indra+OR+%22gasto+en+defensa%22+OR+%22presupuesto+de+defensa%22+OR+rearme+when%3A1d&hl=es&gl=ES&ceid=ES:es"
+defence_industry_eu = "https://defence-industry.eu/feed/"
+gn_gold = "https://news.google.com/rss/search?q=%22gold+price%22+OR+%22gold+prices%22+OR+%22spot+gold%22+OR+bullion+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+# Grandes tecnológicas (EE. UU.)
+gn_bigtech = "https://news.google.com/rss/search?q=Nvidia+OR+AMD+OR+Apple+OR+Microsoft+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+gn_games_retail = "https://news.google.com/rss/search?q=%22Take-Two%22+OR+%22GTA+6%22+OR+%22GTA+VI%22+OR+Rockstar+OR+Walmart+when%3A1d&hl=en-US&gl=US&ceid=US:en"
+# Eventos con fecha: presentaciones, lanzamientos, resultados
+gn_events = "https://news.google.com/rss/search?q=%28keynote+OR+%22launch+event%22+OR+unveil+OR+%22release+date%22+OR+%22earnings+date%22+OR+GTC+OR+WWDC+OR+%22investor+day%22%29+%28Nvidia+OR+Apple+OR+Microsoft+OR+AMD+OR+ASML+OR+Rheinmetall+OR+%22Take-Two%22+OR+Walmart%29+when%3A2d&hl=en-US&gl=US&ceid=US:en"
+gn_chips = "https://news.google.com/rss/search?q=ASML+OR+Infineon+OR+%22chip+export%22+OR+%22export+controls%22+OR+%22chip+shortage%22+OR+chipmakers+when%3A1d&hl=en-US&gl=US&ceid=US:en"
+
+[news.source_weights]     # fiabilidad de cada fuente: feeds directos por nombre, Google News por medio
+wsj_markets = 1.0
+bbc_world = 0.9
+aljazeera = 0.7
+cnbc_world = 0.8
+defence_industry_eu = 0.7
+# 1.0: agencias y prensa financiera de referencia
+"reuters" = 1.0
+"bloomberg.com" = 1.0
+"bloomberg" = 1.0
+"financial times" = 1.0
+"wsj" = 1.0
+"the wall street journal" = 1.0
+"ap news" = 1.0
+# 0.8–0.9
+"bbc" = 0.9
+"cnbc" = 0.8
+"the new york times" = 0.85
+"el país" = 0.8
+"cinco días" = 0.8
+"expansión" = 0.8
+# 0.7: especializados
+"defense news" = 0.7
+"breaking defense" = 0.7
+"infodefensa" = 0.7
+"defensa.com" = 0.7
+"edr magazine - european defence review" = 0.7
+"defence industry europe" = 0.7
+"kitco" = 0.7
+"marketscreener" = 0.7
+"marketscreener.com" = 0.7
+"marketscreener españa" = 0.7
+# 0.5–0.6
+"yahoo finance" = 0.6
+"investing.com" = 0.5
+"investing.com españa" = 0.5
+"fxstreet" = 0.5
+"mining.com" = 0.5
+# 0.4 (= default)
+"tradingview" = 0.4
+"benzinga" = 0.4
+"the motley fool" = 0.4
+# 0.2: contenido automático
+"marketbeat" = 0.2
+"simply wall st" = 0.2
+"gurufocus" = 0.2
+# 0: spam, se descartan
+"ad-hoc-news.de" = 0.0
+"vietnam.vn" = 0.0
+"facebook" = 0.0
+"linkedin" = 0.0
+"dealroom" = 0.0
+"stockanalysis.com" = 0.0
+default = 0.4
+
+[watch]                   # vigilante de noticias: no adelanta decisiones en bolsa (de momento)
+enabled = false
+window_hours = 3
+min_sources = 3
+min_strength = 0.5
+
+[adapt]
+enabled = true
+cadence_days = 14         # umbrales de compra y venta: walk-forward cada 2 semanas
+auto_apply_in_paper = true
+auto_apply_live = false   # live: cada cambio de pesos llega con ✅ Aplicar / ❌ No y tú decides
+max_weight_step = 0.15
+lookback_days = 730
+train_days = 180
+test_days = 60
+mc_runs = 100
+
+[learn]                   # retroalimentación: cada tick se compara después con el precio real
+enabled = true
+horizon = "4h"
+lookback_days = 180       # 58 días en velas de 15 min (lo que da Yahoo) + el resto en velas de 1 h
+min_n_eff = 400
+independent_bets = 5      # 16 valores de 6 sectores ≈ 5 apuestas independientes (cripto: 2)
+max_step = 0.05
+shrinkage_k = 400
+cadence_days = 7
+auto_apply_live = false   # live: cada cambio de pesos llega con ✅ Aplicar / ❌ No y tú decides
+cost = 0.002              # ida y vuelta: deslizamiento × 2 (sin comisión)
+min_abs = 0.05

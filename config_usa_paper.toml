@@ -1,0 +1,492 @@
+# Cartera de EE. UU. en Trading 212 (cuenta en EUR, líneas en USD _US_EQ: 0,15 % de cambio por operación,
+# ya contado como comisión). Sesión de Nueva York (15:30-22:00 en Madrid; sigue sola los cambios de hora de
+# EE. UU.). Cada orden te la propone por Telegram (✅/❌). Empieza en PAPEL para la fase de comprobación.
+# En Telegram se elige con la palabra "usa" (/estado usa...).
+
+[general]
+portfolio = "usa"         # palabra de la cartera en Telegram
+label = "🇺🇸 EE. UU."        # etiqueta de sus avisos
+mode = "paper"            # fase de comprobación: dinero simulado. "live" = Trading 212 real
+engine = "stocks"         # motor multiposición con propuestas (newsbot/stocks)
+exchange = "yahoo"        # fuente de datos (features/yahoo.py); cada activo necesita [market.CODE]
+# Universo: grandes y volátiles de EE. UU. (USD, convertidas a EUR con el cambio actual).
+# El primero es el de referencia para la reoptimización. Cada código necesita [news.assets] y [market].
+symbols = ["NVDA/EUR", "AMD/EUR", "SMCI/EUR", "TSLA/EUR", "META/EUR", "AMZN/EUR", "GOOGL/EUR", "AAPL/EUR",
+           "MSFT/EUR", "PLTR/EUR", "COIN/EUR", "TTWO/EUR", "WMT/EUR"]
+initial_capital = 30.0     # capital de papel para la prueba (en live manda el saldo real)
+timezone = "Europe/Madrid"
+data_dir = "data/usa"
+healthcheck_hours = 80
+tick_minutes = 5          # ciclo base; [speed] lo acelera con volatilidad (mín. 2 min)
+
+[weights]                 # deben sumar 1
+# PRUEBA EN PAPEL (5-nov): con 180 días de datos, a 4 h vista estos valores VUELVEN A LA MEDIA
+# (Bollinger IC +0,085 y RSI +0,068 aciertan; momentum −0,10 falla; tendencia 0). Se inclina la
+# señal hacia comprar lo estirado a la baja y menos hacia seguir la subida. Si no mejora, se vuelve.
+news = 0.35
+trend = 0.10              # tendencia diaria (SMA10 vs SMA30): a 4 h no predice (IC 0,006)
+intraday = 0.05           # impulso de las últimas horas: tampoco (IC −0,07)
+events = 0.15             # eventos con fecha (presentaciones, lanzamientos, GTA VI...): sube antes, baja después
+bollinger = 0.15          # precio por debajo de su banda = barato a corto plazo (IC +0,085, significativo)
+rsi = 0.10                # sobreventa (IC +0,068)
+dip = 0.10                # caída fuerte con tendencia de fondo alcista: rebote
+fng = 0.0                 # Fear & Greed es de cripto: no se usa (news.fng = false)
+votes = 0.0               # votos de CryptoPanic: no hay para acciones
+# Componentes "sombra": rsi, bollinger, momentum, volume, breakout (canal de 20 días), macd y high52
+# (cercanía al máximo de 52 semanas) se calculan y se miden en cada tick, pero solo
+# operan si tienen peso aquí o en una propuesta aprobada (/aprobar bolsa N). Sin peso = 0.
+
+[strategy]
+buy_threshold = 0.15      # MODO ATREVIDO (papel): entra con señales más flojas
+buy_threshold_bear = 0.30 # umbral de compra si el precio está por debajo de la SMA200
+sell_threshold = -0.05    # y sale en cuanto la señal se tuerce
+news_ema_days = 3         # EMA sobre el sentimiento: un titular suelto no cambia la decisión
+sma_fast = 10
+sma_slow = 30
+sma_regime = 200
+intraday_timeframe = "15m"
+ema_fast = 8              # 8 velas de 15 min = 2 h
+ema_slow = 32             # 32 velas de 15 min = 8 h (≈ una sesión)
+
+[risk]
+max_exposure = 1.0
+min_rebalance_pct = 0.20
+stop_loss_pct = 0.08
+trailing_stop_pct = 0.015 # asegura ganancias: vende si cae un 1,5 % desde el máximo
+max_drawdown_pct = 0.50   # (papel: que no le importe perder) kill-switch: solo vender/mantener hasta reactivarlo a mano
+vol_target = 0.0          # volatilidad anual objetivo; 0 = desactivado
+edge_cost_multiple = 1.5  # movimiento esperado >= 1,5 × coste de ida y vuelta
+atr_days = 14
+min_order_eur = 1.0
+max_trades_per_day = 3    # operaciones como máximo al día (después solo actúan los stops)
+cooldown_minutes = 120    # tras operar, no vuelve a operar por señal en este tiempo (los stops sí)
+
+[costs]                   # estilo Trading 212: 0 € de comisión; el spread va en el deslizamiento
+fee_pct = 0.0015           # 0,15 % de cambio de divisa de Trading 212 en cada compra y venta
+slippage_pct = 0.0005      # spread de valores muy líquidos de EE. UU.
+
+[execution]
+order_type = "market"
+limit_timeout_min = 15
+operator_id = 0           # solo Bitvavo lo usa
+broker = "paper"          # fase de comprobación; luego "trading212"
+t212_env = "live"         # cuenta real (la clave de demo es otra)
+confirm = false           # PAPEL: opera solo y te avisa de cada operación. En live con Trading 212 es
+                          # obligatorio true (cada orden espera tu ✅): la validación lo exige
+proposal_minutes = 10     # una propuesta caduca a los 10 min (el precio ya habrá cambiado)
+max_proposals_day = 40    # muchas operaciones pequeñas al día
+reject_cooldown_hours = 4 # si dices que no, no vuelve a proponer ese valor en 4 h (salvo stop-loss)
+max_order_eur = 15.0      # tope por orden durante la prueba
+price_drift_max = 0.015   # si al confirmar el precio se ha movido > 1,5 %, no ejecuta y avisa
+broker_stop = true        # tras comprar, deja el stop-loss puesto en Trading 212 (funciona con el PC apagado)
+
+[portfolio]               # equilibrio: nunca todo en una apuesta
+budget_eur = 30.0         # presupuesto en la cuenta compartida de Trading 212 (Europa: 20 €); crece con lo que gane
+max_positions = 3         # como mucho 3 valores a la vez
+max_position_pct = 0.35   # cada posición, como mucho el 35 % del capital
+max_group_pct = 0.50      # cada sector (defensa, chips...), como mucho el 50 %
+max_group_positions = 2   # y como mucho 2 valores del mismo sector
+min_cash_pct = 0.20       # siempre queda al menos un 20 % en efectivo
+risk_per_trade_pct = 0.02 # si salta el stop, se pierde como mucho un 2 % del capital: los valores más
+atr_stop_mult = 2.5       # volátiles llevan posiciones más pequeñas (stop a 2,5 × ATR, entre 3 % y 12 %)
+
+# Niveles por capital: con poco dinero, 1-2 posiciones y recoger beneficios pronto (+4 % ≈ 1 € con 20 €);
+# al crecer, más reparto y dejar correr. El primer nivel cuyo "up_to_eur" cubre el capital manda.
+[[portfolio.tiers]]
+name = "semilla (hasta 50 €)"
+up_to_eur = 50.0
+max_positions = 3
+max_position_pct = 0.45
+max_group_pct = 0.60
+min_cash_pct = 0.10
+risk_per_trade_pct = 0.03
+take_profit_pct = 0.015
+
+[[portfolio.tiers]]
+name = "crecimiento (50-250 €)"
+up_to_eur = 250.0
+max_positions = 4
+max_position_pct = 0.35
+max_group_pct = 0.50
+min_cash_pct = 0.15
+risk_per_trade_pct = 0.025
+take_profit_pct = 0.02
+
+[[portfolio.tiers]]
+name = "consolidación (250-1000 €)"
+up_to_eur = 1000.0
+max_positions = 4
+max_position_pct = 0.30
+max_group_pct = 0.50
+min_cash_pct = 0.15
+risk_per_trade_pct = 0.02
+take_profit_pct = 0.03
+
+[[portfolio.tiers]]
+name = "proporcional (más de 1000 €)"
+max_positions = 5
+max_position_pct = 0.25
+max_group_pct = 0.45
+min_cash_pct = 0.20
+risk_per_trade_pct = 0.015
+take_profit_pct = 0.0     # sin objetivo fijo: deja correr con el trailing stop
+
+[kronos]                  # modelo de velas preentrenado, en tu CPU (no gasta Claude). Componente "kronos" en
+enabled = true            # sombra: se mide en cada ciclo y learn le da peso solo si acierta de verdad
+size = "mini"             # mini: ~7 s para los 13 valores; small: ~40 s (más preciso, más lento)
+pred_len = 8              # velas de 15 min previstas (2 h)
+
+[local_news]              # FinBERT puntúa cada titular en tu ordenador (sin gastar Claude): componente
+enabled = true            # sombra "finbert" y, si llega un titular nuevo y muy marcado, adelanta Claude
+breaking = 0.80           # tono mínimo (de 1) para considerarlo noticia fuerte
+min_weight = 0.5          # y peso mínimo (fuente fiable y reciente)
+
+[adaptive]                # umbral de compra que se ajusta solo: más exigente si pierde, más atrevido si gana
+enabled = true
+min_trades = 4            # empieza a ajustar con 4 operaciones cerradas
+window = 6                # mira las últimas 6 operaciones cerradas
+step = 0.02               # cada ajuste mueve el umbral 0,02
+min_offset = -0.05        # nunca por debajo de 0,10 (0,15 − 0,05)
+max_offset = 0.15
+
+[speed]                   # ciclo variable: rápido cuando el mercado se mueve, lento cuando está plano
+min_minutes = 1           # mercado moviéndose: un ciclo por minuto (vigila stops y objetivos de cerca)
+max_minutes = 10
+fast_above = 0.5          # impulso intradía mediano (|0-1|) a partir del cual va al mínimo
+slow_below = 0.15         # por debajo, al máximo
+near_stop_pct = 0.015     # o si una posición está a menos de un 1,5 % de su stop
+
+[events]                  # Claude lee las noticias y apunta los eventos con fecha de cada empresa
+enabled = true
+refresh_hours = 4         # cada cuánto busca eventos nuevos en los titulares
+lookahead_days = 30       # eventos de los próximos 30 días
+pre_days = 7              # el efecto crece en los 7 días previos (compra el rumor)...
+post_days = 3             # ...y se da la vuelta 3 días después (vende la noticia)
+llm_max_calls_day = 8     # tope de llamadas a Claude para eventos
+
+[sentiment]
+cascade = ["llm"]         # léxico y FinBERT miden el tono, no el efecto: una guerra es "negativa" pero
+fallback = "none"         # sube el oro y la defensa. Sin LLM la noticia cuenta 0 (no el léxico)
+llm_model = "claude-haiku-5-5"
+finbert_model = "ProsusAI/finbert"
+debate = false
+anonymize = false         # las noticias de competidores (contratos, pedidos) sí informan
+llm_min_minutes = 180     # Claude reutiliza el resultado de cada valor durante este tiempo
+llm_max_calls_day = 60    # tope diario propio de esta cartera (13 valores, sesión de 6,5 h)
+
+[session]                 # sesión de Nueva York: 09:35-16:00 hora de EE. UU. (15:35-22:00 en Madrid)
+tz = "America/New_York"
+days = [0, 1, 2, 3, 4]
+open = "09:35"            # 5 min tras la apertura: sin la subasta
+close = "16:00"
+
+[market.SP500]            # solo referencia (estudio de eventos, history.py): no se opera
+ticker = "SPY"
+currency = "USD"
+group = "mercado"
+name = "S&P 500 (SPY ETF, benchmark for US large caps)"
+
+[market.NVDA]
+ticker = "NVDA"
+currency = "USD"
+isin = "US67066G1040"
+t212 = "NVDA_US_EQ"
+group = "chips"
+name = "Nvidia (US AI-chip leader, data-center GPUs; very liquid and volatile; moves on AI capex, GTC/CES keynotes, export controls to China and earnings; keynotes often lift the stock in the days before)"
+
+[market.AMD]
+ticker = "AMD"
+currency = "USD"
+isin = "US0079031078"
+t212 = "AMD_US_EQ"
+group = "chips"
+name = "AMD (US CPU/GPU maker with data-center AI accelerators; driven by AI demand, product launches, export controls and earnings)"
+
+[market.SMCI]
+ticker = "SMCI"
+currency = "USD"
+isin = "US86800U3023"
+t212 = "SMCI_US_EQ"
+group = "chips"
+name = "Super Micro Computer (AI server maker; extremely volatile; moves with Nvidia supply, AI capex, accounting/governance news and earnings)"
+
+[market.TSLA]
+ticker = "TSLA"
+currency = "USD"
+isin = "US88160R1014"
+t212 = "TSLA_US_EQ"
+group = "autos"
+name = "Tesla (EVs, autonomy, energy; one of the most volatile mega caps; moves on deliveries, Musk statements, robotaxi/FSD news, politics and earnings)"
+
+[market.META]
+ticker = "META"
+currency = "USD"
+isin = "US30303M1027"
+t212 = "FB_US_EQ"
+group = "tecnologia"
+name = "Meta Platforms (social networks and ads, heavy AI spending; moves on ad market, AI capex, regulation and earnings)"
+
+[market.AMZN]
+ticker = "AMZN"
+currency = "USD"
+isin = "US0231351067"
+t212 = "AMZN_US_EQ"
+group = "tecnologia"
+name = "Amazon (e-commerce and AWS cloud; moves on cloud growth, consumer spending, holiday season, tariffs and earnings)"
+
+[market.GOOGL]
+ticker = "GOOGL"
+currency = "USD"
+isin = "US02079K3059"
+t212 = "GOOGL_US_EQ"
+group = "tecnologia"
+name = "Alphabet/Google (search ads, YouTube, Google Cloud, Gemini AI; moves on AI competition, antitrust rulings and earnings)"
+
+[market.AAPL]
+ticker = "AAPL"
+currency = "USD"
+isin = "US0378331005"
+t212 = "AAPL_US_EQ"
+group = "tecnologia"
+name = "Apple (iPhone, Mac, services; moves on product events such as the September iPhone launch and WWDC, China demand, tariffs and earnings; its events are often 'buy the rumor, sell the news')"
+
+[market.MSFT]
+ticker = "MSFT"
+currency = "USD"
+isin = "US5949181045"
+t212 = "MSFT_US_EQ"
+group = "tecnologia"
+name = "Microsoft (Azure cloud, AI partner of OpenAI, Office, Xbox/Activision; driven by AI/cloud growth, earnings and regulation)"
+
+[market.PLTR]
+ticker = "PLTR"
+currency = "USD"
+isin = "US69608A1088"
+t212 = "PLTR_US_EQ"
+group = "software"
+name = "Palantir (AI/data software for governments and companies, defense contracts; very volatile, momentum-driven retail favorite; moves on government contracts and earnings)"
+
+[market.COIN]
+ticker = "COIN"
+currency = "USD"
+isin = "US19260Q1076"
+t212 = "COIN_US_EQ"
+group = "cripto"
+name = "Coinbase (largest US crypto exchange; trades like leveraged bitcoin; moves on crypto prices, SEC regulation, ETF flows and trading volumes)"
+
+[market.TTWO]
+ticker = "TTWO"
+currency = "USD"
+isin = "US8740541094"
+t212 = "TTWO_US_EQ"
+group = "consumo"
+name = "Take-Two Interactive (video-game publisher: Rockstar/GTA, NBA 2K; GTA VI release timing and any delay are the dominant driver)"
+
+[market.WMT]
+ticker = "WMT"
+currency = "USD"
+isin = "US9311421039"
+t212 = "WMT_US_EQ"
+group = "consumo"
+name = "Walmart (largest US retailer; defensive; driven by US consumer spending, the holiday season and tariffs)"
+
+[news]
+window_hours = 24         # la noticia vieja ya está en el precio
+half_life_hours = 12      # un titular de hace 12 h pesa la mitad que uno de ahora
+refresh_minutes = 3       # las noticias se descargan cada 3 min; el precio, en cada ciclo
+fng = false               # sin Fear & Greed (es un índice de cripto)
+# Frases que dan falsos positivos con las palabras clave ("gold medal", "blue chip", "price war"...)
+exclude = ["gold medal", "blue chip", "blue-chip", "dicaprio", "da vinci", "del vecchio", "indra nooyi",
+          "price war", "culture war"]
+
+[news.assets]             # titulares que cuentan para cada valor
+NVDA = ["nvidia", "jensen huang", "blackwell", "rubin", "gtc", "geforce", "cuda", "h200", "b200", "gb200",
+        "artificial intelligence", "ai chips", "data center", "data centers", "gpu", "gpus",
+        "hyperscaler", "capex", "openai", "tariff", "tariffs", "trade war", "trade deal",
+        "export controls", "chip export", "entity list", "china", "taiwan", "federal reserve",
+        "fomc", "fed chair", "powell", "rate cut", "rate cuts", "rate hike", "interest rates",
+        "inflation", "cpi", "pce", "treasury yields", "jobs report", "nonfarm payrolls",
+        "unemployment", "wall street", "nasdaq", "s&p 500", "stock market", "earnings season",
+        "sell-off", "selloff", "rally", "recession", "trump", "white house"]
+AMD = ["amd", "advanced micro devices", "lisa su", "ryzen", "radeon", "epyc", "mi300", "mi350", "mi400",
+       "artificial intelligence", "ai chips", "data center", "data centers", "gpu", "gpus",
+       "hyperscaler", "capex", "openai", "tariff", "tariffs", "trade war", "trade deal",
+       "export controls", "chip export", "entity list", "china", "taiwan", "federal reserve", "fomc",
+       "fed chair", "powell", "rate cut", "rate cuts", "rate hike", "interest rates", "inflation",
+       "cpi", "pce", "treasury yields", "jobs report", "nonfarm payrolls", "unemployment",
+       "wall street", "nasdaq", "s&p 500", "stock market", "earnings season", "sell-off", "selloff",
+       "rally", "recession", "trump", "white house"]
+SMCI = ["supermicro", "super micro", "smci", "ai servers", "artificial intelligence", "ai chips",
+        "data center", "data centers", "gpu", "gpus", "hyperscaler", "capex", "openai",
+        "federal reserve", "fomc", "fed chair", "powell", "rate cut", "rate cuts", "rate hike",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "jobs report",
+        "nonfarm payrolls", "unemployment", "wall street", "nasdaq", "s&p 500", "stock market",
+        "earnings season", "sell-off", "selloff", "rally", "recession", "trump", "white house"]
+TSLA = ["tesla", "elon musk", "musk", "cybertruck", "robotaxi", "model y", "model 3", "fsd", "optimus",
+        "federal reserve", "fomc", "fed chair", "powell", "rate cut", "rate cuts", "rate hike",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "jobs report",
+        "nonfarm payrolls", "unemployment", "tariff", "tariffs", "trade war", "trade deal",
+        "export controls", "chip export", "entity list", "china", "taiwan", "wall street", "nasdaq",
+        "s&p 500", "stock market", "earnings season", "sell-off", "selloff", "rally", "recession",
+        "trump", "white house"]
+META = ["meta", "meta platforms", "facebook", "instagram", "whatsapp", "zuckerberg", "llama", "threads",
+        "artificial intelligence", "ai chips", "data center", "data centers", "gpu", "gpus",
+        "hyperscaler", "capex", "openai", "federal reserve", "fomc", "fed chair", "powell",
+        "rate cut", "rate cuts", "rate hike", "interest rates", "inflation", "cpi", "pce",
+        "treasury yields", "jobs report", "nonfarm payrolls", "unemployment", "wall street",
+        "nasdaq", "s&p 500", "stock market", "earnings season", "sell-off", "selloff", "rally",
+        "recession", "trump", "white house"]
+AMZN = ["amazon", "aws", "andy jassy", "prime day", "black friday", "alexa", "artificial intelligence",
+        "ai chips", "data center", "data centers", "gpu", "gpus", "hyperscaler", "capex", "openai",
+        "federal reserve", "fomc", "fed chair", "powell", "rate cut", "rate cuts", "rate hike",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "jobs report",
+        "nonfarm payrolls", "unemployment", "wall street", "nasdaq", "s&p 500", "stock market",
+        "earnings season", "sell-off", "selloff", "rally", "recession", "trump", "white house",
+        "tariff", "tariffs", "trade war", "trade deal", "export controls", "chip export",
+        "entity list", "china", "taiwan"]
+GOOGL = ["google", "alphabet", "gemini", "youtube", "waymo", "sundar pichai", "antitrust",
+         "artificial intelligence", "ai chips", "data center", "data centers", "gpu", "gpus",
+         "hyperscaler", "capex", "openai", "federal reserve", "fomc", "fed chair", "powell",
+         "rate cut", "rate cuts", "rate hike", "interest rates", "inflation", "cpi", "pce",
+         "treasury yields", "jobs report", "nonfarm payrolls", "unemployment", "wall street",
+         "nasdaq", "s&p 500", "stock market", "earnings season", "sell-off", "selloff", "rally",
+         "recession", "trump", "white house"]
+AAPL = ["apple", "iphone", "ipad", "macbook", "vision pro", "wwdc", "tim cook", "app store", "tariff",
+        "tariffs", "trade war", "trade deal", "export controls", "chip export", "entity list",
+        "china", "taiwan", "federal reserve", "fomc", "fed chair", "powell", "rate cut", "rate cuts",
+        "rate hike", "interest rates", "inflation", "cpi", "pce", "treasury yields", "jobs report",
+        "nonfarm payrolls", "unemployment", "wall street", "nasdaq", "s&p 500", "stock market",
+        "earnings season", "sell-off", "selloff", "rally", "recession", "trump", "white house"]
+MSFT = ["microsoft", "azure", "copilot", "satya nadella", "xbox", "activision", "artificial intelligence",
+        "ai chips", "data center", "data centers", "gpu", "gpus", "hyperscaler", "capex", "openai",
+        "tariff", "tariffs", "trade war", "trade deal", "export controls", "chip export",
+        "entity list", "china", "taiwan", "federal reserve", "fomc", "fed chair", "powell",
+        "rate cut", "rate cuts", "rate hike", "interest rates", "inflation", "cpi", "pce",
+        "treasury yields", "jobs report", "nonfarm payrolls", "unemployment", "wall street",
+        "nasdaq", "s&p 500", "stock market", "earnings season", "sell-off", "selloff", "rally",
+        "recession", "trump", "white house"]
+PLTR = ["palantir", "alex karp", "aip", "gotham", "foundry", "artificial intelligence", "ai chips",
+        "data center", "data centers", "gpu", "gpus", "hyperscaler", "capex", "openai",
+        "federal reserve", "fomc", "fed chair", "powell", "rate cut", "rate cuts", "rate hike",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "jobs report",
+        "nonfarm payrolls", "unemployment", "wall street", "nasdaq", "s&p 500", "stock market",
+        "earnings season", "sell-off", "selloff", "rally", "recession", "trump", "white house"]
+COIN = ["coinbase", "brian armstrong", "bitcoin", "crypto", "cryptocurrency", "sec", "stablecoin", "etf",
+        "federal reserve", "fomc", "fed chair", "powell", "rate cut", "rate cuts", "rate hike",
+        "interest rates", "inflation", "cpi", "pce", "treasury yields", "jobs report",
+        "nonfarm payrolls", "unemployment", "wall street", "nasdaq", "s&p 500", "stock market",
+        "earnings season", "sell-off", "selloff", "rally", "recession", "trump", "white house"]
+TTWO = ["take-two", "take two", "rockstar", "rockstar games", "gta", "gta 6", "gta vi", "grand theft auto",
+        "2k games", "zynga", "strauss zelnick", "nba 2k", "federal reserve", "fomc", "fed chair",
+        "powell", "rate cut", "rate cuts", "rate hike", "interest rates", "inflation", "cpi", "pce",
+        "treasury yields", "jobs report", "nonfarm payrolls", "unemployment", "wall street",
+        "nasdaq", "s&p 500", "stock market", "earnings season", "sell-off", "selloff", "rally",
+        "recession", "trump", "white house"]
+WMT = ["walmart", "doug mcmillon", "sam's club", "black friday", "holiday sales", "retail sales",
+       "consumer spending", "tariff", "tariffs", "trade war", "trade deal", "export controls",
+       "chip export", "entity list", "china", "taiwan", "federal reserve", "fomc", "fed chair",
+       "powell", "rate cut", "rate cuts", "rate hike", "interest rates", "inflation", "cpi", "pce",
+       "treasury yields", "jobs report", "nonfarm payrolls", "unemployment", "wall street", "nasdaq",
+       "s&p 500", "stock market", "earnings season", "sell-off", "selloff", "rally", "recession",
+       "trump", "white house"]
+
+[news.feeds]              # fuentes de EE. UU. (Google News siempre con when:)
+# CNBC: portada de EE. UU.
+cnbc_us = "https://www.cnbc.com/id/100003114/device/rss/rss.html"
+wsj_markets = "https://feeds.content.dowjones.io/public/rss/RSSMarketsMain"
+marketwatch = "https://feeds.content.dowjones.io/public/rss/mw_topstories"
+bloomberg_markets = "https://feeds.bloomberg.com/markets/news.rss"
+# Reuters vía Google News
+gn_reuters = "https://news.google.com/rss/search?q=site%3Areuters.com+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+gn_megacaps = "https://news.google.com/rss/search?q=Nvidia+OR+AMD+OR+Tesla+OR+Meta+OR+Amazon+OR+Alphabet+OR+Apple+OR+Microsoft+when%3A6h&hl=en-US&gl=US&ceid=US:en"
+gn_movers = "https://news.google.com/rss/search?q=Palantir+OR+Coinbase+OR+%22Super+Micro%22+OR+%22Take-Two%22+OR+Walmart+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+gn_fed_macro = "https://news.google.com/rss/search?q=%22Federal+Reserve%22+OR+Powell+OR+CPI+OR+%22jobs+report%22+OR+tariffs+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+# Eventos con fecha
+gn_events = "https://news.google.com/rss/search?q=%28keynote+OR+%22launch+event%22+OR+unveil+OR+%22release+date%22+OR+%22earnings+date%22+OR+GTC+OR+WWDC+OR+%22investor+day%22%29+%28Nvidia+OR+Apple+OR+Microsoft+OR+AMD+OR+Tesla+OR+Meta+OR+Amazon+OR+Alphabet+OR+Palantir+OR+%22Take-Two%22+OR+Walmart%29+when%3A2d&hl=en-US&gl=US&ceid=US:en"
+# Previa de la sesión
+gn_premarket = "https://news.google.com/rss/search?q=%22stock+futures%22+OR+premarket+OR+%22pre-market%22+when%3A12h&hl=en-US&gl=US&ceid=US:en"
+
+[news.source_weights]     # fiabilidad de cada fuente: feeds directos por nombre, Google News por medio
+wsj_markets = 1.0
+bbc_world = 0.9
+aljazeera = 0.7
+cnbc_world = 0.8
+defence_industry_eu = 0.7
+# 1.0: agencias y prensa financiera de referencia
+"reuters" = 1.0
+"bloomberg.com" = 1.0
+"bloomberg" = 1.0
+"financial times" = 1.0
+"wsj" = 1.0
+"the wall street journal" = 1.0
+"ap news" = 1.0
+# 0.8–0.9
+"bbc" = 0.9
+"cnbc" = 0.8
+"the new york times" = 0.85
+"el país" = 0.8
+"cinco días" = 0.8
+"expansión" = 0.8
+# 0.7: especializados
+"defense news" = 0.7
+"breaking defense" = 0.7
+"infodefensa" = 0.7
+"defensa.com" = 0.7
+"edr magazine - european defence review" = 0.7
+"defence industry europe" = 0.7
+"kitco" = 0.7
+"marketscreener" = 0.7
+"marketscreener.com" = 0.7
+"marketscreener españa" = 0.7
+# 0.5–0.6
+"yahoo finance" = 0.6
+"investing.com" = 0.5
+"investing.com españa" = 0.5
+"fxstreet" = 0.5
+"mining.com" = 0.5
+# 0.4 (= default)
+"tradingview" = 0.4
+"benzinga" = 0.4
+"the motley fool" = 0.4
+# 0.2: contenido automático
+"marketbeat" = 0.2
+"simply wall st" = 0.2
+"gurufocus" = 0.2
+# 0: spam, se descartan
+"ad-hoc-news.de" = 0.0
+"vietnam.vn" = 0.0
+"facebook" = 0.0
+"linkedin" = 0.0
+"dealroom" = 0.0
+"stockanalysis.com" = 0.0
+default = 0.4
+
+[watch]                   # vigilante de noticias: no adelanta decisiones en bolsa (de momento)
+enabled = false
+window_hours = 3
+min_sources = 3
+min_strength = 0.5
+
+[adapt]
+enabled = true
+cadence_days = 14         # umbrales de compra y venta: walk-forward cada 2 semanas
+auto_apply_in_paper = true
+auto_apply_live = true    # como en cripto: se ajusta sola (±0,05, límites duros, /deshacer bolsa N)
+max_weight_step = 0.15
+lookback_days = 730
+train_days = 180
+test_days = 60
+mc_runs = 100
+
+[learn]                   # retroalimentación: cada tick se compara después con el precio real
+enabled = true
+horizon = "4h"
+lookback_days = 180       # 58 días en velas de 15 min (lo que da Yahoo) + el resto en velas de 1 h
+min_n_eff = 400
+independent_bets = 5      # 16 valores de 6 sectores ≈ 5 apuestas independientes (cripto: 2)
+max_step = 0.05
+shrinkage_k = 400
+cadence_days = 7
+auto_apply_live = true
+cost = 0.004              # ida y vuelta: 2 × (0,15 % cambio + 0,05 % spread)
+min_abs = 0.05

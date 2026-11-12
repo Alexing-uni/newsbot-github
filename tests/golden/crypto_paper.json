@@ -1,0 +1,317 @@
+{
+ "decisions": [
+  {
+   "day": "2026-11-02",
+   "mode": "paper",
+   "action": "BUY",
+   "signal": 0.58,
+   "target_exposure": 0.72,
+   "order_eur": 7.199999999999999,
+   "price": 90834.83492820457,
+   "reason": "señal de compra",
+   "inputs_json": {
+    "headlines": [
+     {
+      "title": "Bitcoin ETF inflows surge to record",
+      "summary": "Big day",
+      "source": "a",
+      "published": "2026-11-02T06:00:00+00:00",
+      "url": "",
+      "votes": [
+       0,
+       0,
+       0
+      ],
+      "weight": 0.44331033100107864
+     }
+    ],
+    "symbol": "BTC/EUR",
+    "held_before": null,
+    "fng_value": 50,
+    "fng_signal": 0.0,
+    "coins": {
+     "BTC/EUR": {
+      "features": {
+       "trend": 1.0,
+       "regime": "unknown",
+       "atr_pct": 0.03752497163644876,
+       "vol": 2.0629748133843415e-15,
+       "rsi": -1.0,
+       "bollinger": -0.8484807968402239,
+       "momentum": 0.7213535210701005,
+       "volume": 0.0,
+       "intraday": 0.0
+      },
+      "price": 90834.83492820457,
+      "min_order_eur": 5.0,
+      "closes": [
+       67392.44576664531,
+       68066.37022431176,
+       68747.03392655487,
+       69434.50426582042,
+       70128.84930847863,
+       70830.13780156341,
+       71538.43917957904,
+       72253.82357137484,
+       72976.36180708859,
+       73706.12542515948,
+       74443.18667941107,
+       75187.61854620518,
+       75939.49473166723,
+       76698.8896789839,
+       77465.87857577375,
+       78240.53736153147,
+       79022.94273514679,
+       79813.17216249827,
+       80611.30388412325,
+       81417.41692296448,
+       82231.59109219414,
+       83053.90700311608,
+       83884.44607314724,
+       84723.29053387871,
+       85570.52343921749,
+       86426.22867360967,
+       87290.49096034576,
+       88163.39586994922,
+       89045.02982864872,
+       89935.4801269352
+      ],
+      "sentiment": {
+       "score": 1.0,
+       "confidence": 0.7,
+       "reason": "léxico: 1/1 con señal",
+       "method": "lexicon"
+      },
+      "news_ema": 0.7,
+      "headlines_hash": "d8080c6e08b4ee99",
+      "votes": 0.0,
+      "signal": 0.58,
+      "action": "BUY",
+      "reason": "señal de compra",
+      "contributions": {
+       "news": 0.27999999999999997,
+       "trend": 0.3,
+       "intraday": 0.0,
+       "fng": 0.0,
+       "votes": 0.0
+      }
+     },
+     "ETH/EUR": {
+      "features": {
+       "trend": 1.0,
+       "regime": "unknown",
+       "atr_pct": 0.035281067845706414,
+       "vol": 2.174921609550433e-15,
+       "rsi": -1.0,
+       "bollinger": -0.8731913315839186,
+       "momentum": 1.0,
+       "volume": 0.0,
+       "intraday": 0.0
+      },
+      "price": 9843.092365096243,
+      "min_order_eur": 5.0,
+      "closes": [
+       5434.084752310065,
+       5542.766447356265,
+       5653.621776303391,
+       5766.694211829459,
+       5882.028096066048,
+       5999.668657987369,
+       6119.662031147116,
+       6242.055271770059,
+       6366.896377205459,
+       6494.234304749569,
+       6624.11899084456,
+       6756.601370661453,
+       6891.733398074682,
+       7029.568066036176,
+       7170.159427356899,
+       7313.562615904038,
+       7459.833868222118,
+       7609.03054558656,
+       7761.211156498292,
+       7916.4353796282585,
+       8074.764087220823,
+       8236.25936896524,
+       8400.984556344545,
+       8569.004247471436,
+       8740.384332420865,
+       8915.192019069282,
+       9093.495859450668,
+       9275.365776639681,
+       9460.873092172476,
+       9650.090554015926
+      ],
+      "sentiment": {
+       "score": 0.0,
+       "confidence": 0.0,
+       "reason": "sin titulares",
+       "method": "none"
+      },
+      "news_ema": 0.0,
+      "headlines_hash": "e3b0c44298fc1c14",
+      "votes": 0.0,
+      "signal": 0.3,
+      "action": "HOLD",
+      "reason": "sin ventaja: movimiento esperado 1.06% < coste",
+      "contributions": {
+       "news": 0.0,
+       "trend": 0.3,
+       "intraday": 0.0,
+       "fng": 0.0,
+       "votes": 0.0
+      }
+     }
+    },
+    "state_before": {
+     "cash": 10.0,
+     "qty": 0.0,
+     "avg_entry": 0.0,
+     "peak": 10.0,
+     "high": 0.0
+    },
+    "trigger": null
+   },
+   "news_ema": 0.7,
+   "symbol": "BTC/EUR"
+  }
+ ],
+ "decisions_archive": [],
+ "orders": [
+  {
+   "id": 1,
+   "day": "2026-11-02",
+   "client_order_id": "2026-11-02",
+   "mode": "paper",
+   "side": "buy",
+   "qty": 7.91855591359015e-05,
+   "price": 90925.66976313276,
+   "fee": 0.018,
+   "eur": 7.199999999999999,
+   "status": "filled",
+   "symbol": "BTC/EUR"
+  }
+ ],
+ "equity_daily": [
+  {
+   "day": "2026-11-02",
+   "cash": 2.782000000000001,
+   "qty": 7.91855591359015e-05,
+   "avg_entry": 90925.66976313276,
+   "price": 45000.0,
+   "equity": 6.345350161115569,
+   "peak": 10.0,
+   "high_since_entry": 90834.83492820457,
+   "symbol": "BTC/EUR"
+  }
+ ],
+ "sentiment_runs": [
+  {
+   "id": 1,
+   "day": "2026-11-02",
+   "method": "lexicon",
+   "score": 1.0,
+   "confidence": 0.7,
+   "reason": "léxico: 1/1 con señal",
+   "headlines_hash": "d8080c6e08b4ee99",
+   "symbol": "BTC/EUR"
+  },
+  {
+   "id": 2,
+   "day": "2026-11-02",
+   "method": "none",
+   "score": 0.0,
+   "confidence": 0.0,
+   "reason": "sin titulares",
+   "headlines_hash": "e3b0c44298fc1c14",
+   "symbol": "ETH/EUR"
+  }
+ ],
+ "ticks": [
+  {
+   "id": 1,
+   "ts": 1793606700,
+   "symbol": "BTC/EUR",
+   "price": 90834.83492820457,
+   "signal": 0.58,
+   "action": "BUY",
+   "reason": "señal de compra",
+   "held": 0,
+   "raw_json": "{\"news\": 0.7, \"trend\": 1.0, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0, \"rsi\": -1.0, \"bollinger\": -0.8484807968402239, \"momentum\": 0.7213535210701005, \"volume\": 0.0, \"_regime\": \"unknown\", \"_atr\": 0.03752497163644876}",
+   "contributions_json": "{\"news\": 0.27999999999999997, \"trend\": 0.3, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0}"
+  },
+  {
+   "id": 2,
+   "ts": 1793606700,
+   "symbol": "ETH/EUR",
+   "price": 9843.092365096243,
+   "signal": 0.3,
+   "action": "HOLD",
+   "reason": "sin ventaja: movimiento esperado 1.06% < coste",
+   "held": 0,
+   "raw_json": "{\"news\": 0.0, \"trend\": 1.0, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0, \"rsi\": -1.0, \"bollinger\": -0.8731913315839186, \"momentum\": 1.0, \"volume\": 0.0, \"_regime\": \"unknown\", \"_atr\": 0.035281067845706414}",
+   "contributions_json": "{\"news\": 0.0, \"trend\": 0.3, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0}"
+  },
+  {
+   "id": 3,
+   "ts": 1793607000,
+   "symbol": "BTC/EUR",
+   "price": 90834.83492820457,
+   "signal": 0.58,
+   "action": "HOLD",
+   "reason": "enfriamiento: operó hace poco o agotó las operaciones de hoy",
+   "held": 1,
+   "raw_json": "{\"news\": 0.7, \"trend\": 1.0, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0, \"rsi\": -1.0, \"bollinger\": -0.8484807968402239, \"momentum\": 0.7213535210701005, \"volume\": 0.0, \"_regime\": \"unknown\", \"_atr\": 0.03752497163644876}",
+   "contributions_json": "{\"news\": 0.27999999999999997, \"trend\": 0.3, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0}"
+  },
+  {
+   "id": 4,
+   "ts": 1793607000,
+   "symbol": "ETH/EUR",
+   "price": 9843.092365096243,
+   "signal": 0.3,
+   "action": "HOLD",
+   "reason": "enfriamiento: operó hace poco o agotó las operaciones de hoy",
+   "held": 0,
+   "raw_json": "{\"news\": 0.0, \"trend\": 1.0, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0, \"rsi\": -1.0, \"bollinger\": -0.8731913315839186, \"momentum\": 1.0, \"volume\": 0.0, \"_regime\": \"unknown\", \"_atr\": 0.035281067845706414}",
+   "contributions_json": "{\"news\": 0.0, \"trend\": 0.3, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0}"
+  },
+  {
+   "id": 5,
+   "ts": 1793617500,
+   "symbol": "BTC/EUR",
+   "price": 45000.0,
+   "signal": -0.02000000000000335,
+   "action": "HOLD",
+   "reason": "stop-loss (45000.00 <= 83651.62) (ajuste por debajo del mínimo)",
+   "held": 1,
+   "raw_json": "{\"news\": 0.7, \"trend\": -1.0, \"intraday\": -2.220446049250313e-14, \"fng\": 0.0, \"votes\": 0.0, \"rsi\": 1.0, \"bollinger\": 0.7993216172636757, \"momentum\": -0.672819452928648, \"volume\": -0.0, \"_regime\": \"unknown\", \"_atr\": 0.042706918067892126}",
+   "contributions_json": "{\"news\": 0.27999999999999997, \"trend\": -0.3, \"intraday\": -3.3306690738754696e-15, \"fng\": 0.0, \"votes\": 0.0}"
+  },
+  {
+   "id": 6,
+   "ts": 1793617500,
+   "symbol": "ETH/EUR",
+   "price": 9843.092365096243,
+   "signal": 0.3,
+   "action": "HOLD",
+   "reason": "kill-switch (drawdown 72%): solo vender/mantener",
+   "held": 0,
+   "raw_json": "{\"news\": 0.0, \"trend\": 1.0, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0, \"rsi\": -1.0, \"bollinger\": -0.8731913315839186, \"momentum\": 1.0, \"volume\": 0.0, \"_regime\": \"unknown\", \"_atr\": 0.035281067845706414}",
+   "contributions_json": "{\"news\": 0.0, \"trend\": 0.3, \"intraday\": 0.0, \"fng\": 0.0, \"votes\": 0.0}"
+  }
+ ],
+ "commands": {
+  "/estado": "<b>newsbot · PAPER</b> · último ciclo 12:05 (hace 1 min)\n⏳ Próxima actualización en 4 min 00 s\nFlags: ninguno\nCapital <b>6.35 €</b> · P&amp;L -3.65 € (-36.5%) · efectivo 2.78 €\nPosición: BTC/EUR 0.00007919 · entrada 90,925.6698 · precio 45,000.0000 (-50.5%)\nÚltima decisión 2026-11-02: BUY BTC/EUR — señal de compra\n<b>Ranking</b>\n1. ETH/EUR +0.300 HOLD\n2. BTC/EUR -0.020 HOLD\n🎯 Para comprar ETH necesita señal ≥ +0.40 (le faltan +0.10)\n🤖 Claude: sin API key (sentimiento con léxico)\n🧠 Memoria ░░░░░░░░░░ 0% (0/400 muestras a 4h)\n   recogiendo datos · faltan ≈34 días para poder juzgar qué señales funcionan\n📚 1 titulares (0 de foros) · 6 lecturas de precio\n<b>📰 Últimas noticias</b> · 1 en 24 h\n🟢 +1.00 · Bitcoin ETF inflows surge to record\n   <i>a · hace 5 h</i>\n<i>/noticias BTC · /senales · /aprendizaje · /ayuda</i>",
+  "/senales": "<b>Señales</b> · tick 02/11 12:05 (hace 1 min)\n<pre>moneda  señal  acción\nETH    +0.300  HOLD\nBTC    -0.020  HOLD</pre>\n<b>ETH/EUR</b>: trend +0.300, news +0.000, intraday +0.000\n<b>BTC/EUR</b>: trend -0.300, news +0.280, intraday -0.000\n🎯 Para comprar ETH necesita señal ≥ +0.40 (le faltan +0.10)\nUmbrales: compra ≥ +0.25 (bajista +0.40) · venta ≤ -0.15",
+  "/moneda BTC": "<b>BTC/EUR</b> · 45,000.0000 · tick hace 1 min · en cartera\nSeñal <b>-0.020</b> → HOLD\nMotivo: stop-loss (45000.00 &lt;= 83651.62) (ajuste por debajo del mínimo)\n<b>Componentes</b> (valor · peso → aporte)\n<code>news      </code> +0.700 · 0.40 → +0.280\n<code>trend     </code> -1.000 · 0.30 → -0.300\n<code>intraday  </code> -0.000 · 0.15 → -0.000\n<code>fng       </code> +0.000 · 0.10 → +0.000\n<code>votes     </code> +0.000 · 0.05 → +0.000\n<code>rsi       </code> +1.000 · sombra\n<code>bollinger </code> +0.799 · sombra\n<code>momentum  </code> -0.673 · sombra\n<code>volume    </code> +0.000 · sombra\n<b>Titulares recientes</b>\n🟢 +1.00 · Bitcoin ETF inflows surge to record\n   <i>a · hace 5 h</i>",
+  "/operaciones": "<b>Últimas 1 operaciones</b>\n2026-11-02 09:05 · <b>BUY</b> BTC/EUR 0.00007919 @ 90,925.6698 = 7.20 € · comisión 0.0180 € · filled",
+  "/rendimiento": "<b>Rendimiento</b> (2026-11-02 → 2026-11-02)\nCapital 6.35 € · inicial 10.00 € · -3.65 € (-36.5%)\n7 d: +0.00 € (+0.0%) · 30 d: +0.00 € (+0.0%)\nMáx. drawdown: -0.0% · ahora -0.0% desde el máximo (6.35 €)\nÓrdenes llenadas: 1 · comisiones: 0.0180 €\n<i>Rentabilidad pasada no garantiza la futura.</i>",
+  "/ayuda": "<b>Comandos</b>\n/estado — Estado, capital, posición, ranking y últimas noticias (/status)\n/noticias [MONEDA] [N] — Titulares de las últimas 24 h con su sentimiento (/news)\n/senales — Señales del último tick y sus componentes principales (/signals)\n/moneda SYM — Detalle de una moneda: componentes, pesos y titulares (/coin)\n/aprendizaje [1h|4h|24h] — Qué componentes predicen el precio (/learn)\n/operaciones [N] — Últimas órdenes (/trades)\n/rendimiento — Rentabilidad, drawdown y comisiones (/profit)\n/propuestas — Cambios de parámetros pendientes y en vigor (/proposals)\n/aprobar &lt;id&gt; — Aplica una propuesta desde el próximo tick (/approve)\n/rechazar &lt;id&gt; — Descarta una propuesta (/reject)\n/deshacer &lt;id&gt; — Revierte un cambio ya aplicado (también los automáticos) (/undo)\n/pausa — Pausa las decisiones (/pause)\n/reanudar CONFIRMAR — Reanuda y rearma el kill-switch (/resume)\n/informe — Informe semanal (/report)\n/ayuda — Esta lista (/help)",
+  "/propuestas": "No hay propuestas pendientes.\nSin cambios aplicados: rige config.toml."
+ },
+ "telegram": [
+  "newsbot [paper] 2026-11-02 | posición: ninguna\nSeñales del día:\n  BTC/EUR  +0.580 BUY  señal de compra\n  ETH/EUR  +0.300 HOLD sin ventaja: movimiento esperado 1.06% < coste\nDecisión: BUY BTC/EUR  señal +0.580\n  news: +0.280\n  trend: +0.300\n  intraday: +0.000\n  fng: +0.000\n  votes: +0.000\nMotivo: señal de compra\nBTC/EUR 90,834.8349 | capital 10.00 € | P&L +0.00 € (+0.0%)\nF&G (alternative.me): 50\nTitulares de BTC con más peso:\n  · (0.44) Bitcoin ETF inflows surge to record"
+ ],
+ "journal": "day,mode,symbol,action,signal,news,trend,intraday,fng,votes,fng_value,price,order_eur,fee,cash,qty,equity,sentiment_method,reason\n2026-11-02,paper,BTC/EUR,BUY,0.58,0.28,0.3,0.0,0.0,0.0,50,90834.83492820457,7.2,0.018,2.782,7.91855591359015e-05,9.9748,lexicon,señal de compra\n"
+}

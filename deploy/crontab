@@ -1,0 +1,12 @@
+# crontab -e  (ajusta /opt/newsbot a la ruta del repo). CRON_TZ requiere cronie o Vixie cron.
+CRON_TZ=Europe/Madrid
+# Modo sin bucle. NO lo combines con `docker compose up` (--loop): el bucle ya decide, avisa y
+# atiende Telegram; dos procesos leyendo getUpdates se roban los comandos.
+# Decisión diaria a las 09:05 (comando explícito: el de docker-compose.yml es --loop)
+5 9 * * *   cd /opt/newsbot && docker compose run --rm newsbot python -m newsbot.bot >> data/cron.log 2>&1
+# Healthcheck cada hora: avisa por Telegram si no hay decisión en 26 h
+0 * * * *   cd /opt/newsbot && docker compose run --rm newsbot python -m newsbot.bot --healthcheck >> data/cron.log 2>&1
+# Comandos de Telegram cada minuto (/status, /pause, /resume, /report, /approve)
+* * * * *   cd /opt/newsbot && docker compose run --rm newsbot python -m newsbot.bot --telegram-poll >> data/cron.log 2>&1
+# Informe semanal los lunes a las 09:30
+30 9 * * 1  cd /opt/newsbot && docker compose run --rm newsbot python -m newsbot.bot --report >> data/cron.log 2>&1
